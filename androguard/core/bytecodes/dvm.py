@@ -7640,6 +7640,10 @@ class DalvikVMFormat(bytecode._Bytecode):
         self.__cached_methods_idx = None
         self.__cache_fields = None
 
+        # cache methods and fields as well, otherwise the decompiler is quite slow
+        self.__cache_all_methods = None
+        self.__cache_all_fields = None
+
     def get_api_version(self):
         '''
             This method returns api version that should be used for loading api
@@ -7941,11 +7945,12 @@ class DalvikVMFormat(bytecode._Bytecode):
 
           :rtype: a list of :class:`EncodedField` objects
         """
-        l = []
-        for i in self.classes.class_def:
-            for j in i.get_fields():
-                l.append(j)
-        return l
+        if self.__cache_all_fields is None:
+            self.__cache_all_fields = []
+            for i in self.classes.class_def:
+                for j in i.get_fields():
+                    self.__cache_all_fields.append(j)
+        return self.__cache_all_fields
 
     def get_methods(self):
         """
@@ -7953,11 +7958,12 @@ class DalvikVMFormat(bytecode._Bytecode):
 
           :rtype: a list of :class:`EncodedMethod` objects
         """
-        l = []
-        for i in self.classes.class_def:
-            for j in i.get_methods():
-                l.append(j)
-        return l
+        if self.__cache_all_methods is None:
+            self.__cache_all_methods = []
+            for i in self.classes.class_def:
+                for j in i.get_methods():
+                    self.__cache_all_methods.append(j)
+        return self.__cache_all_methods
 
     def get_len_methods(self):
         """
@@ -8001,7 +8007,7 @@ class DalvikVMFormat(bytecode._Bytecode):
         """
         key = class_name + method_name + descriptor
 
-        if self.__cache_methods == None:
+        if self.__cache_methods is None:
             self.__cache_methods = {}
             for i in self.classes.class_def:
                 for j in i.get_methods():

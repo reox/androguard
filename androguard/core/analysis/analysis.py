@@ -57,15 +57,12 @@ class DVMBasicBlock(object):
         Get all instructions from a basic block.
 
         :rtype: Return all instructions in the current basic block
-      """
-        tmp_ins = []
+        """
         idx = 0
         for i in self.method.get_instructions():
-            if idx >= self.start and idx < self.end:
-                tmp_ins.append(i)
-
+            if self.start <= idx < self.end:
+                yield i
             idx += i.get_length()
-        return tmp_ins
 
     def get_nb_instructions(self):
         return self.nb_instructions
@@ -750,10 +747,14 @@ class Analysis(object):
         self.vms = [vm]
         self.classes = {}
         self.strings = {}
+        self.methods = {}
 
         for current_class in vm.get_classes():
             self.classes[current_class.get_name()] = ClassAnalysis(
                 current_class, True)
+
+        for method in vm.get_methods():
+            self.methods[method] = MethodAnalysis(vm, method)
 
     def create_xref(self):
         debug("Creating XREF/DREF")
@@ -906,10 +907,14 @@ class Analysis(object):
             queue_classes.task_done()
 
     def get_method(self, method):
-        for vm in self.vms:
-            if method in vm.get_methods():
-                return MethodAnalysis(vm, method)
-        return None
+        """
+        :param method: 
+        :return: `MethodAnalysis` object for the given method
+        """
+        if method in self.methods:
+            return self.methods[method]
+        else:
+            return None
 
     def get_method_by_name(self, class_name, method_name, method_descriptor):
         if class_name in self.classes:
@@ -920,6 +925,10 @@ class Analysis(object):
         return None
 
     def get_method_analysis(self, method):
+        """
+        :param method: 
+        :return: `MethodClassAnalysis` for the given method
+        """
         class_analysis = self.get_class_analysis(method.get_class_name())
         if class_analysis:
             return class_analysis.get_method_analysis(method)
