@@ -69,7 +69,7 @@ for method in d.get_methods():
     bc = code.get_bc()
 
     idx = 0
-    for i in bc.get_instructions():
+    for i in bc.get_instructions:
         if "const" in i.get_name():
             i.show(0)
             formatted_operands = i.get_formatted_operands()

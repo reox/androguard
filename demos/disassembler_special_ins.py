@@ -22,7 +22,7 @@ for method in d.get_methods():
 
     idx = 0
     for i in g.basic_blocks.get():
-        for ins in i.get_instructions():
+        for ins in i.get_instructions:
             op_value = ins.get_op_value()
 
             # packed/sparse

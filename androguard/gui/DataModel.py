@@ -335,7 +335,7 @@ class DexClassModel(DataModel):
         buff = bytearray()
         self.ins_size = 0
         for method in current_class.get_methods():
-            for ins in method.get_instructions():
+            for ins in method.get_instructions:
                 buff += ins.get_raw()
                 self.ins_size += ins.get_length() * 2
         return buff

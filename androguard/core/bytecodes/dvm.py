@@ -6520,7 +6520,7 @@ class DCode(object):
         self.size = size
 
         self.notes = {}
-        self.cached_instructions = []
+        self.cached_instructions = None
 
         self.idx = 0
 
@@ -6552,7 +6552,7 @@ class DCode(object):
         self.idx = idx
 
     def is_cached_instructions(self):
-        if self.cached_instructions:
+        if self.cached_instructions is not None:
             return True
         return False
 
@@ -6572,18 +6572,17 @@ class DCode(object):
             :rtype: a generator of each :class:`Instruction` (or a cached list of instructions if you have setup instructions)
         """
         # it is possible to a cache for instructions (avoid a new disasm)
-        if self.cached_instructions:
-            for i in self.cached_instructions:
-                yield i
-
-        else:
+        if self.cached_instructions is None:
             lsa = LinearSweepAlgorithm()
-            for i in lsa.get_instructions(self.CM, self.size, self.insn,
-                                          self.idx):
-                yield i
+            ins = lsa.get_instructions(self.CM, self.size, self.insn,
+                                          self.idx)
+            self.cached_instructions = list(ins)
+
+        for i in self.cached_instructions:
+            yield i
 
     def reload(self):
-        pass
+        self.cached_instructions = None
 
     def add_inote(self, msg, idx, off=None):
         """
@@ -6617,7 +6616,9 @@ class DCode(object):
         """
         if off != None:
             idx = self.off_to_pos(off)
-        return [i for i in self.get_instructions()][idx]
+        if self.cached_instructions is None:
+            self.get_instructions()
+        return self.cached_instructions[idx]
 
     def off_to_pos(self, off):
         """
@@ -8650,7 +8651,7 @@ def get_bytecodes_methodx(method, mx):
 
             bb_buffer += "%s : " % (i.name)
 
-            instructions = i.get_instructions()
+            instructions = i.get_instructions
             for ins in instructions:
                 ins_buffer += "\t%-8d(%08x) " % (nb, idx)
                 ins_buffer += "%-20s %s" % (ins.get_name(), ins.get_output(idx))

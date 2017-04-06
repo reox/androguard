@@ -244,17 +244,8 @@ class DvClass(object):
     def process_method(self, num, doAST=False):
         method = self.methods[num]
         if not isinstance(method, DvMethod):
-            # Do not change the instructions if it is already cached in the past
-            cached = True
-            if not method.is_cached_instructions():
-                method.set_instructions([i for i in method.get_instructions()])
-                cached = False
-
             self.methods[num] = DvMethod(self.vma.get_method(method))
             self.methods[num].process(doAST=doAST)
-
-            if not cached:
-                method.set_instructions([])
         else:
             method.process(doAST=doAST)
 
@@ -263,6 +254,7 @@ class DvClass(object):
             try:
                 self.process_method(i, doAST=doAST)
             except Exception as e:
+                raise e
                 logger.debug(
                     'Error decompiling method %s: %s', self.methods[i], e)
 

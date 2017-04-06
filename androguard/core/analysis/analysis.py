@@ -1,18 +1,17 @@
 from __future__ import print_function
-
 from future import standard_library
 standard_library.install_aliases()
 from builtins import str
 from builtins import range
 from builtins import object
-import re, collections
-import threading, queue, time
-
-
-from androguard.core.androconf import error, warning, debug, is_ascii_problem,\
-    load_api_specific_resource_module
+import re
+import collections
+import threading
+import queue
+import time
+from androguard.core.androconf import warning, debug, is_ascii_problem
 from androguard.core.bytecodes import dvm
-from androguard.core.bytecodes.api_permissions import DVM_PERMISSIONS_BY_PERMISSION, DVM_PERMISSIONS_BY_ELEMENT
+
 
 class DVMBasicBlock(object):
     """
@@ -40,6 +39,8 @@ class DVMBasicBlock(object):
 
         self.notes = []
 
+        self.__cached_instructions = None
+
     def get_notes(self):
         return self.notes
 
@@ -58,11 +59,15 @@ class DVMBasicBlock(object):
 
         :rtype: Return all instructions in the current basic block
         """
-        idx = 0
-        for i in self.method.get_instructions():
-            if self.start <= idx < self.end:
-                yield i
-            idx += i.get_length()
+        # Caching the instructions here does not help much, as basic blocks are created on the fly
+        if self.__cached_instructions is None:
+            self.__cached_instructions = []
+            idx = 0
+            for i in self.method.get_instructions():
+                if self.start <= idx < self.end:
+                    self.__cached_instructions.append(i)
+                idx += i.get_length()
+        return self.__cached_instructions
 
     def get_nb_instructions(self):
         return self.nb_instructions
@@ -80,7 +85,7 @@ class DVMBasicBlock(object):
         return self.end
 
     def get_last(self):
-        return self.get_instructions()[-1]
+        return self.get_instructions[-1]
 
     def get_next(self):
         """
@@ -400,10 +405,9 @@ class MethodAnalysis(object):
         idx = 0
 
         debug("Parsing instructions")
-        instructions = [i for i in bc.get_instructions()]
-        for i in instructions:
+        for i in bc.get_instructions():
             for j in BasicOPCODES:
-                if j.match(i.get_name()) != None:
+                if j.match(i.get_name()) is not None:
                     v = dvm.determineNext(i, idx, self.method)
                     h[idx] = v
                     l.extend(v)
@@ -420,7 +424,7 @@ class MethodAnalysis(object):
 
         debug("Creating basic blocks in %s" % self.method)
         idx = 0
-        for i in instructions:
+        for i in bc.get_instructions():
             # index is a destination
             if idx in l:
                 if current_basic.get_nb_instructions() != 0:
@@ -461,7 +465,6 @@ class MethodAnalysis(object):
             i.set_exception_analysis(self.exceptions.get_exception(i.start,
                                                                    i.end - 1))
 
-        del instructions
         del h, l
 
     def get_basic_blocks(self):
@@ -797,7 +800,7 @@ class Analysis(object):
                 off = 0
                 bc = code.get_bc()
                 try:
-                    for instruction in bc.get_instructions():
+                    for instruction in bc.get_instructions:
                         op_value = instruction.get_op_value()
                         if op_value in [0x1c, 0x22]:
                             idx_type = instruction.get_ref_kind()
