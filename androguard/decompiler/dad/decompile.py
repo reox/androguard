@@ -251,12 +251,18 @@ class DvClass(object):
 
     def process(self, doAST=False):
         for i in range(len(self.methods)):
+            # TODO If we fail inside a method, everthing else will crash
+            # But if we leave the Exception unhandled, you get incomplete
+            # code out of the decompiler.
+            # We need to know where the decompiler crashed and
+            # Put this information to the code as well...
+            # We can then, for example, try to use SMALI as a fallback.
             try:
                 self.process_method(i, doAST=doAST)
             except Exception as e:
-                raise e
                 logger.debug(
                     'Error decompiling method %s: %s', self.methods[i], e)
+                raise e
 
     def get_ast(self):
         fields = [get_field_ast(f) for f in self.fields]

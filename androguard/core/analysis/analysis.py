@@ -773,6 +773,8 @@ class Analysis(object):
         threads = []
         # TODO maybe adjust this number by the 
         # number of cores or make it configureable?
+        # Or use a multiprocessing.Pool, which can
+        # use the maximum number of cores.
         for n in range(2):
             thread = threading.Thread(target=self._create_xref, args=(instances_class_name, last_vm, queue_classes))
             thread.daemon = True
