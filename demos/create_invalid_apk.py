@@ -19,7 +19,7 @@ def patch_dex(m):
             #    instructions[0].BBBB = 10000
             #    i.set_instructions(instructions)
             if i.get_name() == "testInstances":
-                instructions = [ins for ins in i.get_instructions]
+                instructions = [ins for ins in i.get_instructions()]
                 instructions[0].BBBB = 0x4141
                 i.set_instructions(instructions)
 

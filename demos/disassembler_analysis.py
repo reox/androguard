@@ -31,7 +31,7 @@ for method in d.get_methods():
             for j in i.get_next()), ']', '[ PREV = ', ', '.join(
                 j[2].get_name() for j in i.get_prev()), ']')
 
-        for ins in i.get_instructions:
+        for ins in i.get_instructions():
             print("\t\t %x" % idx, ins.get_name(), ins.get_output())
             idx += ins.get_length()
 

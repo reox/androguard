@@ -21,13 +21,13 @@ for method in d.get_methods():
     if code != None:
         bc = code.get_bc()
         idx = 0
-        for i in bc.get_instructions:
+        for i in bc.get_instructions():
             print("\t", "%x" % idx, i.get_name(), i.get_output())
             idx += i.get_length()
 
 for method in d.get_methods():
     print(method.get_class_name(), method.get_name(), method.get_descriptor())
     idx = 0
-    for i in method.get_instructions:
+    for i in method.get_instructions():
         print("\t", "%x" % idx, i.get_name(), i.get_output())
         idx += i.get_length()

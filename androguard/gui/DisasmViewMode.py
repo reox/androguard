@@ -208,7 +208,7 @@ class DisasmViewMode(ViewMode):
         cnt = 0
         for method in methods:
             mx = vm_analysis.get_method(method)
-            for DVMBasicMethodBlockInstruction in method.get_instructions:
+            for DVMBasicMethodBlockInstruction in method.get_instructions():
             #for DVMBasicMethodBlock in mx.basic_blocks.gets():
             #    for DVMBasicMethodBlockInstruction in DVMBasicMethodBlock.get_instructions():
                 ins = InstructionView(DVMBasicMethodBlockInstruction)

@@ -37,7 +37,7 @@ def patch_method_1(method):
 
 def patch_method_2(method):
     method.set_code_idx(0x12)
-    instructions = [j for j in method.get_instructions]
+    instructions = [j for j in method.get_instructions()]
     for j in range(0, 9):
         instructions.insert(0, Nop())
     method.set_instructions(instructions)
@@ -45,7 +45,7 @@ def patch_method_2(method):
 
 def patch_method_3(method):
     method.set_code_idx(0x12)
-    instructions = [j for j in method.get_instructions]
+    instructions = [j for j in method.get_instructions()]
     for j in range(0, 9):
         instructions.insert(0, dvm.Instruction10x(None, "\x00\x00"))
     method.set_instructions(instructions)
