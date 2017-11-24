@@ -2,6 +2,11 @@ import sys
 import os
 import logging
 import tempfile
+try:
+    from configparser import ConfigParser
+except ImportError:
+    # python 2.7
+    from ConfigParser import ConfigParser
 
 from androguard import __version__
 ANDROGUARD_VERSION = __version__
@@ -28,6 +33,32 @@ def is_ascii_problem(s):
         return False
     except UnicodeDecodeError:
         return True
+
+
+class AndroguardConfiguration:
+    def __init__(self):
+        """
+        A Configuration object to parse Configuration from common places
+        """
+        self.conf = ConfigParser()
+
+        # Read default values
+        # TODO where will this path be?
+        self.conf.read_file("defaults.conf")
+
+        # Read configs
+        # TODO read possible configuration paths on Windows and OS X
+        cfgs = self.conf.read(['/etc/androguard/androguard.conf',
+                               os.path.expanduser('~/.androguard/androguard.conf'),
+                               os.path.expanduser('~/.config/androguard/androguard.conf')],
+                              encoding="UTF-8")
+        log.debug("Read the following configuration files: {}".format(", ".join(cfgs)))
+
+
+
+CONF = AndroguardConfiguration()
+
+
 
 
 class Color(object):
@@ -223,10 +254,6 @@ def show_logging(level=logging.INFO):
 
     logger.addHandler(h)
     logger.setLevel(level)
-
-
-def set_options(key, value):
-    CONF[key] = value
 
 
 def rrmdir(directory):
