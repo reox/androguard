@@ -514,6 +514,14 @@ class APK(object):
         except FileNotPresent:
             pass
 
+    def is_multidex(self):
+        """
+        Test if the APK has multiple DEX files
+
+        :return: True if multiple dex found, otherwise False
+        """
+        return "classes1.dex" in self.get_files()
+
     def get_elements(self, tag_name, attribute):
         """
             Return elements in xml files which match with the tag name and the specific attribute
@@ -527,7 +535,7 @@ class APK(object):
                 value = item.getAttributeNS(NS_ANDROID_URI, attribute)
                 value = self.format_value(value)
 
-                l.append(value.encode('utf-8'))
+                l.append(value)
         return l
 
     def format_value(self, value):
@@ -859,11 +867,11 @@ class APK(object):
         for item in self.zip.infolist():
             if deleted_files is not None:
                 if re.match(deleted_files, item.filename) is None:
-                    if item.filename in new_files:
-                        zout.writestr(item, new_files[item.filename])
-                    else:
-                        buffer = self.zip.read(item.filename)
-                        zout.writestr(item, buffer)
+                    buffer = self.zip.read(item.filename)
+                    zout.writestr(item, buffer)
+            if new_files is not False:
+                if item.filename in new_files:
+                    zout.writestr(item, new_files[item.filename])
         zout.close()
 
     def get_android_manifest_axml(self):
