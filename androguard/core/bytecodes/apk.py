@@ -98,12 +98,15 @@ class APK(object):
         # TODO we could make this less wasteful, if we not save the complete raw file
         # We should use the ZipFile Wrapper on files directly and only use the BytesIO,
         # if raw stuff is supplied.
-        if raw is True:
-            self.__raw = bytearray(filename)
+        if raw:
+            self.__io = io.BytesIO(bytearray(filename))
         else:
-            self.__raw = bytearray(read(filename))
+            self.__io = open(filename, "rb")
 
-        self.zip = zipfile.ZipFile(io.BytesIO(self.__raw), mode="r")
+        # FIXME REMOVE AND FIX IN FILE!!!
+        self.__raw == b''
+
+        self.zip = zipfile.ZipFile(self.__io, mode="r")
 
         if testzip:
             # Test the zipfile for integrity before continuing.
@@ -124,6 +127,7 @@ class APK(object):
             self._apk_analysis()
 
     def __del__(self):
+        self.__io.close()
         self.zip.close()
 
     def _apk_analysis(self):
