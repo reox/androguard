@@ -104,7 +104,7 @@ class APK(object):
             self.__io = open(filename, "rb")
 
         # FIXME REMOVE AND FIX IN FILE!!!
-        self.__raw == b''
+        self.__raw = b''
 
         self.zip = zipfile.ZipFile(self.__io, mode="r")
 
