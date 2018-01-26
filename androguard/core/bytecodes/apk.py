@@ -161,7 +161,7 @@ class APK(object):
             except Exception as e:
                 log.warning("reading AXML as XML failed: " + str(e))
 
-        if self.xml[name]:
+        if self.xml[name] is not None:
             self.package = self.xml[name].get("package")
             self.androidversion["Code"] = self.xml[name].get(NS_ANDROID + "versionCode")
             self.androidversion["Name"] = self.xml[name].get(NS_ANDROID + "versionName")
