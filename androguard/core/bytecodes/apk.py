@@ -57,32 +57,26 @@ class BrokenAPKError(Error):
     pass
 
 
-######################################################## APK FORMAT ########################################################
 class APK(object):
-    def __init__(self,
-                 filename,
-                 raw=False,
-                 magic_file=None,
-                 skip_analysis=False,
-                 testzip=False):
+    def __init__(self, filename, raw=False, magic_file=None, skip_analysis=False, testzip=False):
         """
-            This class can access to all elements in an APK file
+        This class can access to all elements in an APK file
 
-            :param filename: specify the path of the file, or raw data
-            :param raw: specify if the filename is a path or raw data (optional)
-            :param magic_file: specify the magic file (optional)
-            :param skip_analysis: Skip the analysis, e.g. no manifest files are read. (default: False)
-            :param testzip: Test the APK for integrity, e.g. if the ZIP file is broken. Throw an exception on failure (default False)
+        :param filename: specify the path of the file, or raw data
+        :param raw: specify if the filename is a path or raw data (optional)
+        :param magic_file: specify the magic file (optional)
+        :param skip_analysis: Skip the analysis, e.g. no manifest files are read. (default: False)
+        :param testzip: Test the APK for integrity, e.g. if the ZIP file is broken. Throw an exception on failure (default False)
 
-            :type filename: string
-            :type raw: boolean
-            :type magic_file: string
-            :type skip_analysis: boolean
-            :type testzip: boolean
+        :type filename: string
+        :type raw: boolean
+        :type magic_file: string
+        :type skip_analysis: boolean
+        :type testzip: boolean
 
-            :Example:
-              APK("myfile.apk")
-              APK(read("myfile.apk"), raw=True)
+        :Example:
+          APK("myfile.apk")
+          APK(read("myfile.apk"), raw=True)
         """
         self.filename = filename
 
@@ -101,6 +95,9 @@ class APK(object):
 
         self.magic_file = magic_file
 
+        # TODO we could make this less wasteful, if we not save the complete raw file
+        # We should use the ZipFile Wrapper on files directly and only use the BytesIO,
+        # if raw stuff is supplied.
         if raw is True:
             self.__raw = bytearray(filename)
         else:
@@ -126,6 +123,9 @@ class APK(object):
         if not skip_analysis:
             self._apk_analysis()
 
+    def __del__(self):
+        self.zip.close()
+
     def _apk_analysis(self):
         """
         Run analysis on the APK file.
@@ -134,56 +134,55 @@ class APK(object):
         It will then parse the AndroidManifest.xml and set all fields in the APK class which can be
         extracted from the Manifest.
         """
-        for i in self.zip.namelist():
-            if i == "AndroidManifest.xml":
-                self.axml[i] = AXMLPrinter(self.zip.read(i))
-                self.xml[i] = None
-                raw_xml = self.axml[i].get_buff()
-                if len(raw_xml) == 0:
-                    log.warning("AXML parsing failed, file is empty")
-                else:
-                    try:
-                        if self.axml[i].is_packed():
-                            log.warning("XML Seems to be packed, parsing is very likely to fail.")
-                        self.xml[i] = self.axml[i].get_xml_obj()
-                    except Exception as e:
-                        log.warning("reading AXML as XML failed: " + str(e))
 
-                if self.xml[i] is not None:
-                    self.package = self.xml[i].get("package")
-                    self.androidversion["Code"] = self.xml[i].get(
-                        NS_ANDROID + "versionCode")
-                    self.androidversion["Name"] = self.xml[i].get(
-                        NS_ANDROID + "versionName")
+        self._read_manifest()
 
-                    for item in self.xml[i].findall('uses-permission'):
-                        self.permissions.append(item.get(NS_ANDROID + "name"))
+    def _read_manifest(self, name="AndroidManifest.xml"):
+        """
+        Read and process the AndroidManifest.xml (or the name you supply)
 
-                    # getting details of the declared permissions
-                    for d_perm_item in self.xml[i].findall('permission'):
-                        d_perm_name = self._get_res_string_value(str(
-                            d_perm_item.get(NS_ANDROID + "name")))
-                        d_perm_label = self._get_res_string_value(str(
-                            d_perm_item.get(NS_ANDROID + "label")))
-                        d_perm_description = self._get_res_string_value(str(
-                            d_perm_item.get(NS_ANDROID + "description")))
-                        d_perm_permissionGroup = self._get_res_string_value(str(
-                            d_perm_item.get(NS_ANDROID + "permissionGroup")))
-                        d_perm_protectionLevel = self._get_res_string_value(str(
-                            d_perm_item.get(NS_ANDROID + "protectionLevel")))
+        :param name: name of the AndroidManifest.xml in the APK (default: AndroidManifest.xml)
+        """
+        self.axml[name] = AXMLPrinter(self.zip.read(name))
+        self.xml[name] = None
 
-                        d_perm_details = {
-                            "label": d_perm_label,
-                            "description": d_perm_description,
-                            "permissionGroup": d_perm_permissionGroup,
-                            "protectionLevel": d_perm_protectionLevel,
-                        }
-                        self.declared_permissions[d_perm_name] = d_perm_details
+        raw_xml = self.axml[name].get_buff()
+        if len(raw_xml) == 0:
+            log.warning("AXML parsing failed, file is empty")
+        else:
+            try:
+                if self.axml[name].is_packed():
+                    log.warning("XML Seems to be packed, parsing is very likely to fail.")
+                self.xml[name] = self.axml[name].get_xml_obj()
+            except Exception as e:
+                log.warning("reading AXML as XML failed: " + str(e))
 
-                    self.valid_apk = True
+        if self.xml[name]:
+            self.package = self.xml[name].get("package")
+            self.androidversion["Code"] = self.xml[name].get(NS_ANDROID + "versionCode")
+            self.androidversion["Name"] = self.xml[name].get(NS_ANDROID + "versionName")
 
-        self.permission_module = androconf.load_api_specific_resource_module(
-            "aosp_permissions", self.get_target_sdk_version())
+            for item in self.xml[name].findall('uses-permission'):
+                self.permissions.append(item.get(NS_ANDROID + "name"))
+
+            # getting details of the declared permissions
+            for d_perm_item in self.xml[name].findall('permission'):
+                d_perm_name = self._get_res_string_value(str(d_perm_item.get(NS_ANDROID + "name")))
+                d_perm_label = self._get_res_string_value(str(d_perm_item.get(NS_ANDROID + "label")))
+                d_perm_description = self._get_res_string_value(str(d_perm_item.get(NS_ANDROID + "description")))
+                d_perm_permissionGroup = self._get_res_string_value(str(d_perm_item.get(NS_ANDROID + "permissionGroup")))
+                d_perm_protectionLevel = self._get_res_string_value(str(d_perm_item.get(NS_ANDROID + "protectionLevel")))
+
+                d_perm_details = {
+                    "label": d_perm_label,
+                    "description": d_perm_description,
+                    "permissionGroup": d_perm_permissionGroup,
+                    "protectionLevel": d_perm_protectionLevel,
+                }
+                self.declared_permissions[d_perm_name] = d_perm_details
+
+            self.valid_apk = True
+
 
     def __getstate__(self):
         """
@@ -715,6 +714,14 @@ class APK(object):
         """
         return self.get_permissions()
 
+    def get_permission_module(self):
+        """
+        Beware: this is a very memory consuming call! (About 45MB)
+
+        :return: permission_module
+        """
+        return androconf.load_api_specific_resource_module("aosp_permissions", self.get_target_sdk_version())
+
     def get_requested_aosp_permissions(self):
         """
             Returns requested permissions declared within AOSP project.
@@ -724,7 +731,7 @@ class APK(object):
         aosp_permissions = []
         all_permissions = self.get_permissions()
         for perm in all_permissions:
-            if perm in list(self.permission_module["AOSP_PERMISSIONS"].keys()):
+            if perm in list(self.get_permission_module()["AOSP_PERMISSIONS"].keys()):
                 aosp_permissions.append(perm)
         return aosp_permissions
 
@@ -737,7 +744,7 @@ class APK(object):
         l = {}
         for i in self.permissions:
             try:
-                l[i] = self.permission_module["AOSP_PERMISSIONS"][i]
+                l[i] = self.get_permission_module()["AOSP_PERMISSIONS"][i]
             except KeyError:
                 # if we have not found permission do nothing
                 continue
@@ -752,7 +759,7 @@ class APK(object):
         third_party_permissions = []
         all_permissions = self.get_permissions()
         for perm in all_permissions:
-            if perm not in list(self.permission_module["AOSP_PERMISSIONS"].keys()):
+            if perm not in list(self.get_permission_module()["AOSP_PERMISSIONS"].keys()):
                 third_party_permissions.append(perm)
         return third_party_permissions
 

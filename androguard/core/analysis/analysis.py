@@ -874,7 +874,7 @@ class Analysis(object):
         started_at = time.time()
 
         # TODO multiprocessing
-        for c in  self._get_all_classes():
+        for c in self._get_all_classes():
             self._create_xref(c)
 
         diff = time.time() - started_at
@@ -913,7 +913,7 @@ class Analysis(object):
                             self.classes[cur_cls_name].AddXrefTo(REF_CLASS_USAGE, self.classes[type_info], current_method, off)
                             self.classes[type_info].AddXrefFrom(REF_CLASS_USAGE, self.classes[cur_cls_name], current_method, off)
 
-                elif ((0x6e <= op_value <= 0x72) or (0x74 <= op_value <= 0x78)):
+                elif (0x6e <= op_value <= 0x72) or (0x74 <= op_value <= 0x78):
                     idx_meth = instruction.get_ref_kind()
                     method_info = instruction.cm.vm.get_cm_method(idx_meth)
                     if method_info:

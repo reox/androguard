@@ -795,6 +795,7 @@ class AXMLPrinter(object):
         return format_value(_type, _data, lambda _: self.axml.getAttributeValue(index))
 
 
+# From https://github.com/LineageOS/android_frameworks_base/blob/df2898d9ce306bb2fe922d3beaa34a9cf6873d27/include/androidfw/ResourceTypes.h#L213
 # Constants for ARSC Files
 RES_NULL_TYPE = 0x0000
 RES_STRING_POOL_TYPE = 0x0001

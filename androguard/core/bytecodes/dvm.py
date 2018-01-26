@@ -1,7 +1,6 @@
 from __future__ import division
 from __future__ import print_function
 
-from builtins import chr
 from builtins import str
 from builtins import range
 from builtins import object
@@ -14,7 +13,6 @@ from androguard.core.bytecodes import mutf8
 import sys
 import re
 import struct
-import binascii
 import time
 from struct import pack, unpack, calcsize
 import logging
@@ -3712,16 +3710,13 @@ class ClassHDefItem(object):
 
 
 class EncodedTypeAddrPair(object):
-    """
-    This class can parse an encoded_type_addr_pair of a dex file
-
-    :param buff: a string which represents a Buff object of the encoded_type_addr_pair
-    :type buff: Buff object
-    :param cm: a ClassManager object
-    :type cm: :class:`ClassManager`
-    """
-
     def __init__(self, buff):
+        """
+        This class can parse an encoded_type_addr_pair of a dex file
+
+        :param buff: a string which represents a Buff object of the encoded_type_addr_pair
+        :type buff: Buff object
+        """
         self.type_idx = readuleb128(buff)
         self.addr = readuleb128(buff)
 
@@ -3984,10 +3979,12 @@ def get_kind(cm, kind, value):
     return None
 
 
-class Instruction(object):
+class Instruction:
     """
     This class represents a dalvik instruction
     """
+    
+    OP = -1
 
     def get_kind(self):
         """
@@ -4106,6 +4103,7 @@ class InstructionInvalid(Instruction):
 
     def __init__(self, cm, buff):
         super(InstructionInvalid, self).__init__()
+        self.cm = cm
 
         i16 = unpack("=H", buff[0:2])[0]
         self.OP = i16 & 0xff
@@ -6794,7 +6792,7 @@ class DalvikCode(object):
 
 
         if self.tries_size > 0:
-            if (self.insns_size % 2 == 1):
+            if self.insns_size % 2 == 1:
                 buff += pack("=H", self.padding)
 
             for i in self.tries:
@@ -7288,7 +7286,7 @@ class ClassManager(object):
             try:
                 name = bytecode.FormatNameToPython(encoded_method.get_name())
             except AttributeError:
-                name += "_" + bytecode.FormatDescriptorToPython(
+                name = "_" + bytecode.FormatDescriptorToPython(
                     encoded_method.get_descriptor())
 
             log.debug("try deleting old name in python...")
@@ -7337,7 +7335,7 @@ class ClassManager(object):
             try:
                 name = bytecode.FormatNameToPython(encoded_field.get_name())
             except AttributeError:
-                name += "_" + bytecode.FormatDescriptorToPython(
+                name = "_" + bytecode.FormatDescriptorToPython(
                     encoded_field.get_descriptor())
 
             try:
@@ -7500,6 +7498,9 @@ class DalvikVMFormat(bytecode._Bytecode):
 
         self._preload(buff)
         self._load(buff)
+
+    def __del__(self):
+        self._flush()
 
     def _preload(self, buff):
         pass
@@ -8578,7 +8579,8 @@ class ConstString(Instruction21c):
     Simulate a const-string instruction.
     """
 
-    def __init__(self, orig_ins, value):
+    def __init__(self, orig_ins, value, cm, buff):
+        super().__init__(cm, buff)
         self.OP = orig_ins.OP
         self.AA = orig_ins.AA
         self.BBBB = orig_ins.BBBB
@@ -8595,7 +8597,8 @@ class ConstString(Instruction21c):
 class FakeNop(Instruction10x):
     """Simulate a nop instruction."""
 
-    def __init__(self, length):
+    def __init__(self, length, cm, buff):
+        super().__init__(cm, buff)
         self.OP = 0x00
         self.length = length
 
