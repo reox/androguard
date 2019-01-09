@@ -276,7 +276,12 @@ class StringBlock(object):
         """
         string = data.decode(encoding, 'replace')
         if len(string) != str_len:
-            log.warning("invalid decoded string length")
+            if data[:2] == b"\xff\xfe" and len(string) == str_len - 1:
+                # BOM in front of string... Not sure if this is a problem though
+                pass
+            else:
+                log.warning("invalid decoded string length. Declared: {}, Actual: {}, Bytes: {}, Encoding: {}".format(
+                    str_len, len(string), len(data), encoding))
         return string
 
     def _decode_length(self, offset, sizeof_char):
